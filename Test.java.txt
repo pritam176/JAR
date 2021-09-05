@@ -1,0 +1,63 @@
+import java.util.Hashtable;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.spi.InitialContextFactory;
+import javax.naming.spi.InitialContextFactoryBuilder;
+import javax.naming.spi.NamingManager;
+import javax.sql.DataSource;
+
+public class TestJNDI {
+
+	
+	public static void main(String [] arr) {
+		
+	}
+	
+	private static void setupInitialContext() {
+	    try {
+	        NamingManager.setInitialContextFactoryBuilder(new InitialContextFactoryBuilder() {
+
+	            @Override
+	            public InitialContextFactory createInitialContextFactory(Hashtable<?, ?> environment) throws NamingException {
+	                return new InitialContextFactory() {
+
+	                    @Override
+	                    public Context getInitialContext(Hashtable<?, ?> environment) throws NamingException {
+	                        return new InitialContext(){
+
+	                            private Hashtable<String, DataSource> dataSources = new Hashtable<>();
+
+	                            @Override
+	                            public Object lookup(String name) throws NamingException {
+
+	                                if (dataSources.isEmpty()) { //init datasources
+	                                    MysqlConnectionPoolDataSource ds = new MysqlConnectionPoolDataSource();
+	                                    ds.setURL("jdbc:mysql://localhost:3306/mydb");
+	                                    ds.setUser("mydbuser");
+	                                    ds.setPassword("mydbpass");
+	                                    dataSources.put("jdbc/mydbname", ds);
+
+	                                    //add more datasources to the list as necessary
+	                                }
+
+	                                if (dataSources.containsKey(name)) {
+	                                    return dataSources.get(name);
+	                                }
+
+	                                throw new NamingException("Unable to find datasource: "+name);
+	                            }
+	                        };
+	                    }
+
+	                };
+	            }
+
+	        });
+	    }
+	    catch (NamingException ne) {
+	        ne.printStackTrace();
+	    }
+	}
+}
