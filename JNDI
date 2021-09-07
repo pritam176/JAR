@@ -1,0 +1,65 @@
+package com.pkm.test.jndi;
+
+import java.util.Hashtable;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
+public class MyContext extends InitialContext {
+
+    private Hashtable store;
+
+    public MyContext(Hashtable store) throws NamingException {
+        super(true);
+        this.store = store;
+    }
+
+    @Override
+    public void bind(String name, Object obj) {
+        store.put(name, obj);
+    }
+
+    @Override
+    public Object lookup(String name) {
+        return store.get(name);
+    }    
+
+}
+package com.pkm.test.jndi;
+
+import java.util.Hashtable;
+
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.spi.InitialContextFactory;
+
+public class MyContextFactory implements InitialContextFactory {
+	
+	private static Hashtable store = new Hashtable();
+
+   /*
+     Do not confuse [store] with [environment]. They serve different
+     purposes.
+    */
+
+   @Override
+   public Context getInitialContext(Hashtable environment) throws NamingException {
+       return new MyContext(store);
+   }
+
+}
+public static void putInContext(final String key, final Object value) throws NamingException {
+    	Hashtable env = new Hashtable();
+    	env.put(Context.INITIAL_CONTEXT_FACTORY, 
+    	    "com.pkm.test.jndi.MyContextFactory");
+        Context context = new InitialContext(env);
+        context.bind(key, value);
+    }
+
+    public static Object retrieveFromContext(final String key) throws NamingException {
+    	Hashtable env = new Hashtable();
+    	env.put(Context.INITIAL_CONTEXT_FACTORY, 
+    	    "com.pkm.test.jndi.MyContextFactory");
+        Context context = new InitialContext(env);
+        return  context.lookup(key);
+    }
